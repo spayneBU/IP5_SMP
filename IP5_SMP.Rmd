@@ -1,0 +1,273 @@
+---
+Title: Individual Project 5 (SMP)
+Author: Sheridan Payne
+Version: 1.0
+Semester: Spring 2021
+This markdown contains my solution to Individual Project 5
+---
+
+```{r}
+library(datasets)
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(corrplot)
+library(waffle)
+library(ggpubr)
+```
+
+Importing Original Dataset and Shrinking Dataset to Apply Data Science Techniques
+```{r}
+df_full <- read.csv("UFC_fighter_data.csv")
+df <- subset(df_full, select=c(R_fighter, B_fighter, Referee, date, location, Winner, title_bout, weight_class, no_of_rounds, B_avg_opp_BODY_landed, R_avg_opp_BODY_landed, B_avg_opp_HEAD_landed, R_avg_opp_HEAD_landed, B_total_rounds_fought, R_total_rounds_fought, B_Stance, R_Stance, R_Height_cms, B_Height_cms, R_Reach_cms, B_Reach_cms, B_Weight_lbs, R_Weight_lbs, B_age, R_age))
+
+for (i in c(9,10,11,12,13,14,15,18,19,20,21,22,23,24,25)){
+  df[,i] <- as.numeric(df[,i])
+}
+
+df$date <- as.Date(df$date)
+df
+```
+
+DATA TYPES AND MISSING DATA
+
+Creating dataframe to determine:
+- the data type of each column
+- how much data is missing from each variable
+
+```{r}
+Column <- c(); DataType <- c(); MissingData2 <- c()
+MissingData1 <- colMeans(is.na(df))*100
+for (i in 1:length(colnames(df))){
+  Column <- append(Column,colnames(df[i]))
+  DataType <- append(DataType,class(df[[i]]))
+  MissingData2 <- append(MissingData2,MissingData1[[i]])
+}
+null_count <- data.frame(Column,DataType,MissingData2)
+colnames(null_count) <- c('Column','Data Type','Missing Data (%)')
+null_count
+```
+
+SUMMARY STATISTICS FOR DATASET
+
+```{r}
+summary(df)
+```
+
+PROPORTION TABLES FOR CATEGORICAL VARIABLES
+
+Red Fighter (R_fighter)
+```{r}
+R_fighter_prop <- data.frame(table(df$R_fighter))
+colnames(R_fighter_prop) <- c('Red Fighter','Frequency')
+R_fighter_prop['Proportion (%)'] <- (data.frame(table(df$R_fighter))['Freq'] / sum(data.frame(table(df$R_fighter))['Freq']))*100
+R_fighter_prop <- R_fighter_prop[with(R_fighter_prop, order(-Frequency)),]
+R_fighter_prop
+```
+
+Blue Fighter (B_fighter)
+```{r}
+B_fighter_prop <- data.frame(table(df$B_fighter))
+colnames(B_fighter_prop) <- c('Blue Fighter','Frequency')
+B_fighter_prop['Proportion (%)'] <- (data.frame(table(df$B_fighter))['Freq'] / sum(data.frame(table(df$B_fighter))['Freq']))*100
+B_fighter_prop <- B_fighter_prop[with(B_fighter_prop, order(-Frequency)),]
+B_fighter_prop
+```
+
+Referee (Referee)
+```{r}
+ref_prop <- data.frame(table(df$Referee))
+colnames(ref_prop) <- c('Referee','Frequency')
+ref_prop['Proportion (%)'] <- (data.frame(table(df$Referee))['Freq'] / sum(data.frame(table(df$Referee))['Freq']))*100
+ref_prop <- ref_prop[with(ref_prop, order(-Frequency)),]
+ref_prop
+```
+
+Date (date)
+```{r}
+date_prop <- data.frame(table(df$date))
+colnames(date_prop) <- c('Date','Frequency')
+date_prop$Date <- as.Date(date_prop$Date)
+date_prop$Date <- format(date_prop$Date, '%m/%Y')
+date_prop['Proportion (%)'] <- (data.frame(table(df$date))['Freq'] / sum(data.frame(table(df$date))['Freq']))*100
+date_prop
+```
+
+Location (location)
+```{r}
+loc_prop <- data.frame(table(df$location))
+colnames(loc_prop) <- c('Location','Frequency')
+loc_prop['Proportion (%)'] <- (data.frame(table(df$location))['Freq'] / sum(data.frame(table(df$location))['Freq']))*100
+loc_prop <- loc_prop[with(loc_prop, order(-Frequency)),]
+loc_prop
+```
+
+Winner (Winner)
+```{r}
+winner_prop <- data.frame(table(df$Winner))
+colnames(winner_prop) <- c('Winner','Frequency')
+winner_prop['Proportion (%)'] <- (data.frame(table(df$Winner))['Freq'] / sum(data.frame(table(df$Winner))['Freq']))*100
+winner_prop <- winner_prop[with(winner_prop, order(-Frequency)),]
+winner_prop
+```
+
+Title Fight (title_bout)
+```{r}
+title_prop <- data.frame(table(df$title_bout))
+colnames(title_prop) <- c('Title Fight','Frequency')
+title_prop['Proportion (%)'] <- (data.frame(table(df$title_bout))['Freq'] / sum(data.frame(table(df$title_bout))['Freq']))*100
+title_prop <- title_prop[with(title_prop, order(-Frequency)),]
+title_prop
+```
+
+Weight Class (weight_class)
+```{r}
+wc_prop <- data.frame(table(df$weight_class))
+colnames(wc_prop) <- c('Weight Class','Frequency')
+wc_prop['Proportion (%)'] <- (data.frame(table(df$weight_class))['Freq'] / sum(data.frame(table(df$weight_class))['Freq']))*100
+wc_prop <- wc_prop[with(wc_prop, order(-Frequency)),]
+wc_prop
+```
+
+Number of Rounds (no_of_rounds)
+```{r}
+no_rounds_prop <- data.frame(table(df$no_of_rounds))
+colnames(no_rounds_prop) <- c('Number of Rounds','Frequency')
+no_rounds_prop['Proportion (%)'] <- (data.frame(table(df$no_of_rounds))['Freq'] / sum(data.frame(table(df$no_of_rounds))['Freq']))*100
+no_rounds_prop
+```
+
+Red Fighter's Stance (R_Stance)
+```{r}
+R_stance_prop <- data.frame(table(df$R_Stance))
+colnames(R_stance_prop) <- c("Red's Stance",'Frequency')
+R_stance_prop['Proportion (%)'] <- (data.frame(table(df$R_Stance))['Freq'] / sum(data.frame(table(df$R_Stance))['Freq']))*100
+R_stance_prop <- R_stance_prop[-c(1),]
+R_stance_prop <- R_stance_prop[with(R_stance_prop, order(-Frequency)),]
+R_stance_prop
+```
+
+
+Blue Fighter's Stance (B_Stance)
+```{r}
+B_stance_prop <- data.frame(table(df$B_Stance))
+colnames(B_stance_prop) <- c("Blue's Stance",'Frequency')
+B_stance_prop['Proportion (%)'] <- (data.frame(table(df$B_Stance))['Freq'] / sum(data.frame(table(df$B_Stance))['Freq']))*100
+B_stance_prop <- B_stance_prop[-c(1),]
+B_stance_prop <- B_stance_prop[with(B_stance_prop, order(-Frequency)),]
+B_stance_prop
+```
+
+SAVING PROPORTIONAL TABLES FOR FUTURE USE
+```{r}
+write.csv(sample_n(R_fighter_prop,10),'R_fighter_prop.csv',row.names = FALSE)
+write.csv(sample_n(B_fighter_prop,10),'B_fighter_prop.csv',row.names = FALSE)
+write.csv(sample_n(ref_prop,10),'ref_prop.csv',row.names = FALSE)
+write.csv(sample_n(date_prop,10),'date_prop.csv',row.names = FALSE)
+write.csv(sample_n(loc_prop,10),'loc_prop.csv',row.names = FALSE)
+write.csv(winner_prop,'winner_prop.csv',row.names = FALSE)
+write.csv(title_prop,'title_prop.csv',row.names = FALSE)
+write.csv(wc_prop,'wc_prop.csv',row.names = FALSE)
+write.csv(no_rounds_prop,'no_rounds_prop.csv',row.names = FALSE)
+write.csv(R_stance_prop,'R_stance_prop.csv',row.names = FALSE)
+write.csv(B_stance_prop,'B_stance_prop.csv',row.names = FALSE)
+```
+
+CORRELATION TABLE AND HEATMAP
+```{r}
+df_corr <- cor(df[, sapply(df, is.numeric)], use='complete.obs')
+df_corr
+```
+
+Correlation Heatmap
+```{r}
+corrplot(df_corr,tl.cex=0.4)
+```
+
+
+DATA SET GRAPHICAL EXPLORATION
+Distributions
+```{r}
+fig1 <- ggplot(df,aes(B_avg_opp_HEAD_landed)) + geom_histogram(binwidth = 1.8) + labs(y='Count',title='(a) Number of Significant Strikes to the Head of Blue') + theme(plot.title=element_text(size=9))
+fig2 <- ggplot(df,aes(R_avg_opp_HEAD_landed)) + geom_histogram(binwidth = 1.4) + labs(y='Count',title='(b) Number of Significant Strikes to the Head of Red') + theme(plot.title=element_text(size=9))
+ggarrange(fig1,fig2, ncol=2, nrow=1)
+```
+
+```{r}
+fig3 <- ggplot(df,aes(B_avg_opp_BODY_landed)) + geom_histogram(binwidth = 0.61) + labs(y='Count',title='(a) Number of Significant Strikes to the Body of Blue') + theme(plot.title=element_text(size=9))
+fig4 <- ggplot(df,aes(R_avg_opp_BODY_landed)) + geom_histogram(binwidth = 0.61) + labs(y='Count',title='(b) Number of Significant Strikes to the Body of Red') + theme(plot.title=element_text(size=9))
+ggarrange(fig3,fig4,ncol=2,nrow=1)
+```
+
+```{r}
+fig5 <- ggplot(df,aes(x=B_age)) + geom_histogram(aes(y=..density..),binwidth = 1.7, fill='grey', color='black') + geom_density(color='blue') + labs(x='Age',y='Density',title='(a) Distribution of Age of Blue') + theme(plot.title=element_text(size=9))
+fig6 <- ggplot(df,aes(x=R_age)) + geom_histogram(aes(y=..density..),binwidth = 1.45, fill='grey', color='black') + geom_density(color='red') + labs(x='Age',y='Density',title='(b) Distribution of Age of Red') + theme(plot.title=element_text(size=9))
+ggarrange(fig5,fig6,ncol=2,nrow=1)
+```
+
+Scatter Plots / Pairwise Plots
+```{r}
+fig7 <- ggplot(df,aes(x=R_Height_cms,y=R_Reach_cms)) + geom_jitter() + labs(x='Height (cm)',y='Reach / Arm Span (cm)',title='(a) Height and Reach (Arm Span) of Red') + theme(plot.title=element_text(size=9))
+fig8 <- ggplot(df,aes(x=B_Height_cms,y=B_Reach_cms)) + geom_jitter() + labs(x='Height (cm)',y='Reach / Arm Span (cm)',title='(b) Height and Reach (Arm Span) of Blue') + theme(plot.title=element_text(size=9))
+ggarrange(fig7,fig8,ncol=2,nrow=1)
+```
+
+```{r}
+df_cont1 <- df[,c('B_avg_opp_BODY_landed','R_avg_opp_BODY_landed','B_avg_opp_HEAD_landed','R_avg_opp_HEAD_landed','B_total_rounds_fought','R_total_rounds_fought')]
+pairs(df_cont1, main='Correlations of Fight Statistics')
+```
+
+```{r}
+df_cont2 <- df[,c('R_Height_cms','B_Height_cms','R_Reach_cms','B_Reach_cms','B_Weight_lbs','R_Weight_lbs','B_age','R_age')]
+pairs(df_cont2, main='Correlations of Fighter Details')
+```
+
+Bar Charts
+```{r}
+par(las=1, cex.axis=0.5)
+wc <- table(df$weight_class)
+wc <- sort(wc, decreasing=TRUE)
+barplot(wc, horiz = TRUE, main='Number of Fights by Weight Class')
+```
+
+```{r}
+date_fights <- data.frame(table(df$date))
+colnames(date_fights) <- c('Date','Freq')
+date_fights$Date <- as.Date(date_fights$Date)
+date_fights$Date <- format(date_fights$Date,'%m/%Y')
+ggplot(date_fights, aes(Date)) + geom_bar() + coord_flip() + labs(title='Number of Fights by Year and Month from 1993 to 2019')
+```
+
+Line Graphs
+```{r}
+date_full <- data.frame(table(df$date))
+colnames(date_full) <- c("Date","Freq")
+
+date_month <- date_full
+date_month$Date <- as.Date(date_month$Date)
+date_month$Date <- format(date_month$Date, '%m')
+date_month <- aggregate(. ~ Date,data=date_month, FUN=sum)
+
+date_year <- date_full
+date_year$Date <- as.Date(date_year$Date)
+date_year$Date <- format(date_year$Date, '%Y')
+date_year <- aggregate(. ~ Date,data=date_year, FUN=sum)
+
+fig9 <- ggplot(date_full, aes(x=Date, y=Freq, group=1)) +  geom_path() + geom_line() + labs(x='Date',y='Number of Fights',title='Number of Fights from 1993 to 2019') + theme(plot.title=element_text(size=8))
+fig10 <- ggplot(date_month, aes(x=Date, y=Freq, group=1)) + geom_path() + geom_line() + labs(x='Month',y='Number of Fights',title='Number of Fights by Month from 1993 to 2019') + theme(plot.title=element_text(size=7))
+fig11 <- ggplot(date_year, aes(x=Date, y=Freq, group=1)) + geom_path() + geom_line() + labs(x='Year',y='Number of Fights',title='Number of Fights by Year from 1993 to 2019') + theme(plot.title=element_text(size=7))
+ggarrange(fig9,fig10,fig11,ncol=3,nrow=1)
+```
+
+
+Waffle Plot
+```{r}
+wc_waffle <- table(df$weight_class)
+wc_waffle <- sort(wc_waffle, decreasing = TRUE)
+waffle(wc_waffle, rows = 30, size=0.6, colors = c('turquoise3', 'coral1', 'slateblue','deeppink2','chartreuse2','darkgoldenrod1','darksalmon','darkred','darkorchid','cyan2','green1','deepskyblue','darkorchid1','deepskyblue1')) + labs(title='Weight Class') + theme(plot.title = element_text(size=10))
+wc_waffle
+```
+
+
+
+
